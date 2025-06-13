@@ -1,0 +1,6 @@
+columns:
+  age:
+    min: 18
+    max: 60
+  name:
+    required: true
