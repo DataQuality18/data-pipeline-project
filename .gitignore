@@ -1,0 +1,35 @@
+# Bytecode / Cache
+__pycache__/
+*.py[cod]
+
+# Virtual Environment
+venv/
+env/
+
+# Python environment config
+*.egg-info/
+
+# IDE & Editor settings
+.vscode/
+.idea/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment Variables
+.env
+
+# SQLite or temp DB
+*.sqlite3
+
+# Jupyter notebooks
+.ipynb_checkpoints/
+
+# FastAPI static/generated output (optional)
+*.csv
+*.xlsx
+reports/
