@@ -3,3 +3,4 @@ pandas
 pyyaml
 uvicorn
 python-multipart
+openpyxl
