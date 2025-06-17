@@ -1,2 +1,4 @@
+fastapi
 pandas
-boto3
+pyyaml
+uvicorn
