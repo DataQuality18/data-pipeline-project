@@ -4,3 +4,4 @@ pyyaml
 uvicorn
 python-multipart
 openpyxl
+streamlit
