@@ -1,4 +1,4 @@
-def check_age_range(df, min_age=18, max_age=60):
+def check_age_range(df, min_age, max_age):
     """
     Check if 'age' values are outside the specified range.
 

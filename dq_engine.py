@@ -2,6 +2,7 @@ from dq_checks.null_checks import check_nulls
 from dq_checks.uniqueness_checks import check_duplicates
 from dq_checks.range_checks import check_age_range
 import yaml
+import pandas as pd  
 
 # Load rules once
 with open("config/rules_config.yaml", "r") as file:
@@ -20,7 +21,12 @@ def run_all_checks(df):
     if "age" in rules.get("columns", {}):
         min_age = rules["columns"]["age"].get("min", 0)
         max_age = rules["columns"]["age"].get("max", 999)
+        
         range_result = check_age_range(df, min_age, max_age)
-        results["range_violations"] = range_result.to_dict(orient="records")
+       
+        if isinstance(range_result, pd.DataFrame):
+            results["range_violations"] = range_result.to_dict(orient="records")
+        else:
+            results["range_violations"] = range_result
 
     return results
