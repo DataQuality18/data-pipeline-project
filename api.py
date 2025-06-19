@@ -1,6 +1,7 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import FileResponse
 import pandas as pd
+import yaml
 import os
 from dq_engine import run_all_checks
 
@@ -8,8 +9,13 @@ app = FastAPI()
 
 @app.post("/run-checks/")
 async def run_checks(file: UploadFile = File(...)):
+    # Read CSV file into DataFrame
     df = pd.read_csv(file.file)
-    results = run_all_checks(df)
+    # Load rules from YAML config
+    with open("config/rules_config.yaml", "r") as f:
+        rules = yaml.safe_load(f)
+    # Run checks with custom rules
+    results = run_all_checks(df, rules)
 
     output_file = "DQ_Report.xlsx"
     with pd.ExcelWriter(output_file) as writer:

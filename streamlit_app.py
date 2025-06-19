@@ -6,7 +6,10 @@ import tempfile
 
 st.title("Data Quality Checker")
 
+# File uploader for CSV files
 uploaded_file = st.file_uploader("Upload CSV", type=["csv"])
+
+# YAML rules editor (editable in the UI)
 rules_yaml = st.text_area(
     "Edit your rules (YAML)",
     value="""
@@ -21,11 +24,15 @@ columns:
 )
 
 if st.button("Run Checks") and uploaded_file is not None:
+    # Load CSV into DataFrame
     df = pd.read_csv(uploaded_file)
+    # Parse YAML from text area
     rules = yaml.safe_load(rules_yaml)
+    # Run all checks using current rules
     result = run_all_checks(df, rules)
+    # Show the summary (dictionary)
     st.write(result)
-    # Generate Excel and provide download link
+    # Prepare downloadable Excel file
     with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
         with pd.ExcelWriter(tmp.name) as writer:
             # Nulls
