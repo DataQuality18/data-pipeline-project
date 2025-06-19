@@ -6,10 +6,7 @@ import tempfile
 
 st.title("Data Quality Checker")
 
-# File uploader for CSV files
 uploaded_file = st.file_uploader("Upload CSV", type=["csv"])
-
-# YAML rules editor (editable in the UI)
 rules_yaml = st.text_area(
     "Edit your rules (YAML)",
     value="""
@@ -18,21 +15,27 @@ columns:
     min: 18
     max: 60
     required: true
+  email:
+    required: true
+    pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.com$"
+  country:
+    required: true
+    allowed:
+      - USA
+      - Canada
+      - India
   name:
     required: true
 """
 )
 
 if st.button("Run Checks") and uploaded_file is not None:
-    # Load CSV into DataFrame
     df = pd.read_csv(uploaded_file)
-    # Parse YAML from text area
     rules = yaml.safe_load(rules_yaml)
-    # Run all checks using current rules
     result = run_all_checks(df, rules)
-    # Show the summary (dictionary)
     st.write(result)
-    # Prepare downloadable Excel file
+
+    # Generate Excel and provide download link
     with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
         with pd.ExcelWriter(tmp.name) as writer:
             # Nulls
@@ -41,18 +44,35 @@ if st.button("Run Checks") and uploaded_file is not None:
                 pd.DataFrame.from_dict(nulls, orient="index", columns=["null_count"]).to_excel(writer, sheet_name="Nulls")
             else:
                 pd.DataFrame({"error": [nulls]}).to_excel(writer, sheet_name="Nulls")
+            
             # Duplicates
             duplicates = result.get("duplicates", [])
             if isinstance(duplicates, list):
                 pd.DataFrame(duplicates).to_excel(writer, sheet_name="Duplicates", index=False)
             else:
                 pd.DataFrame({"error": [duplicates]}).to_excel(writer, sheet_name="Duplicates", index=False)
+
             # Range Issues
             range_violations = result.get("range_violations", [])
             if isinstance(range_violations, list):
                 pd.DataFrame(range_violations).to_excel(writer, sheet_name="Range Issues", index=False)
             else:
                 pd.DataFrame({"error": [range_violations]}).to_excel(writer, sheet_name="Range Issues", index=False)
+
+            # Pattern Mismatches
+            pattern_violations = result.get("pattern_violations", [])
+            if isinstance(pattern_violations, list):
+                pd.DataFrame(pattern_violations).to_excel(writer, sheet_name="Pattern Issues", index=False)
+            else:
+                pd.DataFrame({"error": [pattern_violations]}).to_excel(writer, sheet_name="Pattern Issues", index=False)
+
+            # Allowed Value Mismatches
+            allowed_violations = result.get("allowed_value_violations", [])
+            if isinstance(allowed_violations, list):
+                pd.DataFrame(allowed_violations).to_excel(writer, sheet_name="Allowed Values", index=False)
+            else:
+                pd.DataFrame({"error": [allowed_violations]}).to_excel(writer, sheet_name="Allowed Values", index=False)
+
         st.success("Checks completed! Download your Excel report below.")
         st.download_button(
             label="Download Excel Report",

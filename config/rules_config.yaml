@@ -1,6 +1,11 @@
 columns:
+  email:
+    pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.com$"
   age:
     min: 18
     max: 60
+    required: true
+  department:
+    allowed_values: ["HR", "Finance", "IT", "Operations"]
   name:
     required: true
