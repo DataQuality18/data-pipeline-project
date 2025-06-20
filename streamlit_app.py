@@ -68,7 +68,7 @@ if st.button("Run Checks") and uploaded_file is not None:
                 pd.DataFrame({"error": [pattern_violations]}).to_excel(writer, sheet_name="Pattern Issues", index=False)
 
             # Allowed Value Mismatches
-            allowed_violations = result.get("allowed_value_violations", [])
+            allowed_violations = result.get("value_domain_violations", [])
             if isinstance(allowed_violations, list):
                 pd.DataFrame(allowed_violations).to_excel(writer, sheet_name="Allowed Values", index=False)
             else:
