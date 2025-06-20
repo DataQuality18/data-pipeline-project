@@ -18,12 +18,13 @@ columns:
   email:
     required: true
     pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.com$"
-  country:
+  department:
     required: true
     allowed:
-      - USA
-      - Canada
-      - India
+      - HR
+      - Operations
+      - Finance
+      -IT
   name:
     required: true
 """
