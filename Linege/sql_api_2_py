@@ -1,0 +1,172 @@
+import json
+import sys
+from pathlib import Path
+from typing import Optional, List, Dict, Any
+from fastapi import FastAPI
+
+app = FastAPI()
+
+
+# -----------------------------------------
+# Core Helper Function (DRY principle)
+# -----------------------------------------
+
+def _load_json_files(directory: str = ".") -> List[Dict[str, Any]]:
+    """Load all JSON files from directory. Shared by all functions."""
+    directory_path = Path(directory)
+    json_files = list(directory_path.glob("*.json"))
+    
+    if not json_files:
+        raise FileNotFoundError(f"No JSON files found in directory: {directory}")
+    
+    metadata_list = []
+    for json_file in json_files:
+        try:
+            with open(json_file, 'r', encoding='utf-8') as f:
+                metadata_list.append(json.load(f))
+        except (json.JSONDecodeError, Exception) as e:
+            print(f"Warning: Error processing {json_file}: {str(e)}, skipping...")
+    
+    return metadata_list
+
+
+def _get_classname_from_value(row: Dict[str, Any]) -> Optional[str]:
+    """Extract classname from value object (handles nested and flat formats)."""
+    value_obj = row.get("value")
+    if isinstance(value_obj, dict):
+        return value_obj.get("classname")
+    return row.get("value.classname")
+
+
+# -----------------------------------------
+# Public Functions
+# -----------------------------------------
+
+def get_classname_by_regulation(regulation: str, directory: str = ".") -> str:
+    """Get classname by regulation from JSON files."""
+    for row in _load_json_files(directory):
+        if row.get('regulation') == regulation:
+            classname = _get_classname_from_value(row)
+            if classname:
+                return classname
+            raise ValueError(f"Regulation '{regulation}' found but classname is missing")
+    
+    raise ValueError(f"Regulation '{regulation}' not found in directory: {directory}")
+
+
+def fetch_metadata(directory: str = ".") -> List[Dict[str, Any]]:
+    """Fetch all metadata from JSON files in directory."""
+    return _load_json_files(directory)
+
+
+def filter_by_value_classname(
+    data: List[Dict[str, Any]],
+    target_value_classname: str,
+    print_matches: bool = True
+) -> List[Dict[str, Any]]:
+    """
+    Filter metadata by value.classname.
+    
+    Args:
+        data: List of metadata dictionaries
+        target_value_classname: The classname to filter by
+        print_matches: Whether to print matches to console (default: True)
+        
+    Returns:
+        List of matching records
+    """
+    matches = []
+    for row in data:
+        if _get_classname_from_value(row) == target_value_classname:
+            if print_matches:
+                print("Match found:")
+                print(json.dumps(row, indent=2))
+                print("-" * 80)
+            matches.append(row)
+    
+    return matches
+
+
+# -----------------------------------------
+# FastAPI Endpoint
+# -----------------------------------------
+
+@app.get("/classname-by-regulation")
+def api_get_classname_by_regulation(regulation: str, directory: str = "."):
+    """
+    Get classname by regulation.
+    
+    Example: GET /classname-by-regulation?regulation=rhoo
+    """
+    try:
+        classname = get_classname_by_regulation(regulation, directory)
+        return {"success": True, "regulation": regulation, "classname": classname}
+    except Exception as e:
+        return {"success": False, "error": str(e), "regulation": regulation, "classname": None}
+
+
+# -----------------------------------------
+# Console Functions
+# -----------------------------------------
+
+def console_filter_by_classname(target_value_classname: str, directory: str = "."):
+    """Console entry point for filtering by value.classname."""
+    print("=" * 80)
+    print("FILTER METADATA BY VALUE.CLASSNAME")
+    print("=" * 80)
+    print(f"\nTarget Classname: {target_value_classname}\n")
+    print("-" * 80)
+    
+    try:
+        data = fetch_metadata(directory)
+        print(f"Total records found: {len(data)}")
+        print("-" * 80)
+        
+        matches = filter_by_value_classname(data, target_value_classname)
+        
+        print(f"\n{'=' * 80}")
+        print(f"Total matching records: {len(matches)}")
+        print("=" * 80)
+    except Exception as e:
+        print(f"Error: {str(e)}")
+
+
+def main():
+    """Example usage - get classname by regulation."""
+    print("=" * 80)
+    print("GET CLASSNAME BY REGULATION")
+    print("=" * 80)
+    print(f"\nUser Input: regulation = 'rhoo'\n")
+    
+    try:
+        classname = get_classname_by_regulation("rhoo")
+        print(f"  Classname: {classname}")
+    except Exception as e:
+        print(f"Error: {str(e)}")
+    
+    print("\n" + "=" * 80)
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        command = sys.argv[1]
+        
+        if command == "filter":
+            if len(sys.argv) > 2:
+                console_filter_by_classname(sys.argv[2])
+            else:
+                print("Usage: python get_classname.py filter <value_classname>")
+                
+        elif command == "api":
+            import uvicorn
+            print("Starting FastAPI server on http://0.0.0.0:8000")
+            print("Endpoint: GET /classname-by-regulation?regulation=<regulation>\n")
+            uvicorn.run(app, host="0.0.0.0", port=8000)
+            
+        else:
+            print("Available commands:")
+            print("  python get_classname.py                (get classname by regulation)")
+            print("  python get_classname.py filter <name>  (filter by value.classname)")
+            print("  python get_classname.py api            (start FastAPI server)")
+    else:
+        main()
