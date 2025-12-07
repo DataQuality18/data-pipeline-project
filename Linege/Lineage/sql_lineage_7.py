@@ -49,14 +49,20 @@ class SQLLineageParser:
         """Detect if query is SQL, Mongo, or Elastic"""
         query_trimmed = query_text.strip()
         
+        print(f"\n[DEBUG] detect_query_type:")
+        print(f"  - First 20 chars: {query_trimmed[:20]}")
+        
         # [ at start or GET/POST -> Elastic
         if query_trimmed.startswith(('[', 'GET ', 'POST ')):
+            print(f"  ✓ Result: Elastic")
             return 'Elastic'
         
         # { at start -> Mongo
         if query_trimmed.startswith('{'):
+            print(f"  ✓ Result: Mongo")
             return 'Mongo'
         
+        print(f"  ✓ Result: SQL")
         return 'SQL'
     
     def _create_non_sql_record(self, query_type: str, query_key: str, view_name: str, metadatakey: str = '', regulation: str = '', class_name: str = '') -> Dict[str, str]:
@@ -167,11 +173,16 @@ class SQLLineageParser:
             }
             df = parser.parse_query_dictionary(queries, metadata)
         """
+        print("\n" + "="*120)
+        print("[parse_query_dictionary] START")
+        print("="*120)
+        print(f"[DEBUG] Input: {len(queries)} queries, {len(metadata) if metadata else 0} metadata items")
+        
         all_lineage_data = []
         metadata = metadata or {}
         
         for query_key, sql_text in queries.items():
-            print(f"Processing query: {query_key}")
+            print(f"\n[DEBUG] Processing: {query_key} ({len(sql_text)} chars)")
             
             # Get metadata for this query
             query_metadata = metadata.get(query_key, {})
@@ -213,13 +224,17 @@ class SQLLineageParser:
     
     def parse_single_sql(self, sql_content: str, filename: str, query_key: str = 'UNKNOWN', view_name: str = '', metadatakey: str = '', regulation: str = '', class_name: str = '') -> List[Dict[str, str]]:
         """Parse a single SQL query and extract lineage information"""
+        print(f"\n[DEBUG] parse_single_sql: {query_key}")
+        
         lineage_data = []
         view_name = view_name or filename
         
         # Clean and normalize SQL
         sql_content = self.clean_sql(sql_content)
+        print(f"  ✓ SQL cleaned")
         
         if not sql_content.strip():
+            print(f"  ✗ SQL empty after cleaning")
             return [self._create_placeholder_record(query_key, view_name, metadatakey, regulation, class_name, 'empty_sql_content')]
         
         # Check if SQL contains MAP function - extract basic table info only
@@ -585,6 +600,8 @@ class SQLLineageParser:
     
     def extract_main_tables(self, stmt) -> List[Dict[str, str]]:
         """Extract main tables with their aliases and database information"""
+        print(f"  [extract_main_tables]", end=" ")
+        
         tables = []
         sql_text = str(stmt).strip()
         
@@ -608,7 +625,8 @@ class SQLLineageParser:
                 
                 table_info = self._parse_table_name(full_table_name, table_alias)
                 tables.append(table_info)
-                        
+        
+        print(f"found {len(tables)} table(s)")
         return tables
     
     def _parse_table_name(self, full_table_name: str, table_alias: Optional[str] = None) -> Dict[str, str]:
@@ -634,16 +652,20 @@ class SQLLineageParser:
     
     def extract_select_columns(self, stmt) -> List[Dict[str, str]]:
         """Extract columns from SELECT clause with improved parsing"""
+        print(f"  [extract_select_columns]", end=" ")
+        
         columns = []
         sql_text = str(stmt).strip()
         
         # Skip if not a SELECT statement
         if not self.SELECT_PATTERN.search(sql_text):
+            print(f"no SELECT")
             return columns
         
         # Find SELECT clause
         select_match = self.SELECT_PATTERN.search(sql_text)
         if not select_match:
+            print(f"SELECT match failed")
             return columns
             
         select_clause = select_match.group(1).strip()
@@ -680,7 +702,8 @@ class SQLLineageParser:
                 else:
                     # Simple column or window function, add as is
                     columns.append(col_info)
-                
+        
+        print(f"found {len(columns)} column(s)")
         return columns
     
     def split_sql_columns(self, select_clause: str) -> List[str]:
@@ -776,7 +799,7 @@ class SQLLineageParser:
         col_expr = col_expr.strip()
         if not col_expr:
             return None
-            
+        
         table_name = None
         column_name = None
         alias_name = None
@@ -882,6 +905,8 @@ class SQLLineageParser:
     
     def extract_join_info(self, stmt) -> List[Dict[str, str]]:
         """Extract JOIN information with database context"""
+        print(f"  [extract_join_info]", end=" ")
+        
         joins = []
         sql_text = str(stmt).strip()
         
@@ -897,7 +922,8 @@ class SQLLineageParser:
             table_info['condition'] = join_condition
             table_info['table_alias'] = table_info.pop('alias')  # Rename for consistency
             joins.append(table_info)
-            
+        
+        print(f"found {len(joins)} JOIN(s)")
         return joins
     
     def process_column_lineage(self, col_info: Dict, parent_tables: List, join_info: List, filename: str, level: int, query_key: str = 'UNKNOWN', view_name: str = '', metadatakey: str = '', regulation: str = '', class_name: str = '') -> Dict[str, str]:
@@ -1063,13 +1089,17 @@ class SQLLineageParser:
     
     def create_lineage_dataframe(self, lineage_data: List[Dict[str, str]]) -> pd.DataFrame:
         """Create final DataFrame in the desired format with ambiguous/internal logic"""
+        print(f"\n[DEBUG] create_lineage_dataframe: {len(lineage_data)} records")
+        
         if not lineage_data:
+            print(f"  ✗ No records!")
             return pd.DataFrame(columns=[
                 'Database Name', 'Table Name', 'Column Name', 
                 'Alias Name', 'Remarks'
             ])
             
         df = pd.DataFrame(lineage_data)
+        print(f"  ✓ DataFrame: {df.shape[0]}x{df.shape[1]}")
         
         # Apply ambiguous/internal logic before renaming
         # Rule 1: If both database_name and table_name are empty/missing but column_name exists -> ambiguous
@@ -1186,20 +1216,17 @@ def main():
     
     # Summary
     print()
-    print("=" * 80)
-    print("SUMMARY")
-    print("=" * 80)
-    print(f"SUCCESS: Total columns found: {len(result_df)}")
-    print(f"SUCCESS: Unique databases: {result_df['Database Name'].nunique()}")
-    print(f"SUCCESS: Unique tables: {result_df['Table Name'].nunique()}")
-    print(f"SUCCESS: Unique columns: {result_df['Column Name'].nunique()}")
+    print("=" * 120)
+    print("FINAL RESULTS")
+    print("=" * 120)
+    print(f"  Total rows: {len(result_df)}")
+    print(f"  Unique databases: {result_df['Database Name'].nunique()}")
+    print(f"  Unique tables: {result_df['Table Name'].nunique()}")
+    print(f"  Unique columns: {result_df['Column Name'].nunique()}")
     print()
-    print(f"SAVED: Results saved to: {output_file}")
-    print()
-    print("=" * 80)
+    print(f"✓ Results saved: {output_file}")
+    print("=" * 120)
 
 
 if __name__ == "__main__":
     main()
-sql_lineage_parser.py
-Displaying json_parse_sql.py.
