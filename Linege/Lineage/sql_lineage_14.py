@@ -33,7 +33,8 @@ class SQLLineageParser:
     
     # Pre-compiled regex patterns for performance
     SUBQUERY_PATTERN = re.compile(r'^\s*SELECT\s+.*?\s+FROM\s*\(', re.IGNORECASE | re.DOTALL)
-    FROM_PATTERN = re.compile(r'\bFROM\s+([^()]+?)(?:\s+(?:LEFT|RIGHT|INNER|OUTER|CROSS)?\s*JOIN|\s+WHERE|\s+GROUP\s+BY|\s+HAVING|\s+ORDER\s+BY|\s*$)', re.IGNORECASE | re.DOTALL)
+    #FROM_PATTERN = re.compile(r'\bFROM\s+([^()]+?)(?:\s+(?:LEFT|RIGHT|INNER|OUTER|CROSS)?\s*JOIN|\s+WHERE|\s+GROUP\s+BY|\s+HAVING|\s+ORDER\s+BY|\s*$)', re.IGNORECASE | re.DOTALL)
+    FROM_PATTERN = re.compile(r'\bFROM\s+((?:[^()]+|\((?:[^()]*|\([^()]*\))*\))+(?:\s+(?:LEFT|RIGHT|INNER|OUTER|CROSS)?\s*JOIN\s+(?:[^()]+|\((?:[^()]*|\([^()]*\))*\))*)*)', re.IGNORECASE | re.DOTALL) 
     SELECT_PATTERN = re.compile(r'\bSELECT\s+(.*?)(?=\s+FROM\s+)', re.IGNORECASE | re.DOTALL)
     JOIN_PATTERN = re.compile(r'(?:LEFT|RIGHT|INNER|OUTER|CROSS)?\s*JOIN\s+([\w_.]+)(?:\s+(?:AS\s+)?(\w+))?\s+ON\s+(.*?)(?=\s+(?:LEFT|RIGHT|INNER|OUTER|CROSS)?\s*JOIN|\s+WHERE|\s+GROUP\s+BY|\s+ORDER\s+BY|\s*$)', re.IGNORECASE | re.DOTALL)
     ALIAS_PATTERN = re.compile(r'(.*?)\s+AS\s+([\w_]+)', re.IGNORECASE)
