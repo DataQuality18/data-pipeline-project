@@ -44,6 +44,9 @@ class ParseLineageRequest(BaseModel):
     class_name: Optional[str] = Field(None, description="Optional (kept for compatibility/testing)")
     view_names: Optional[List[str]] = Field(None, description="Optional list of view_name values to filter")
     headers: Optional[Dict[str, str]] = Field(None, description="Optional HTTP headers")
+    
+class ParseLineageencodedsql(BaseModel):
+    sql: str = Field(..., description=" encoded sql")
 
 
 def _safe_b64decode_to_text(b64_str: str) -> str:
@@ -198,3 +201,37 @@ def parse_lineage_from_url(req: ParseLineageRequest):
         "total_records": len(lineage_rows),
         "lineage_data": lineage_rows,
     }
+    
+@app.post("/parse_lineage_from_sql")
+def parse_lineage_from_sql(req: ParseLineageencodedsql):
+    # url + regulation are mandatory by schema
+    decoded_sql = _safe_b64decode_to_text(b64_sql)
+    url = req.sql.strip()
+    decoded_sql = _safe_b64decode_to_text(b64_sql)
+    # Metadatakey rule:
+    # - Always prefer metadatakey found from metadata JSON "name"
+    # - If missing, fallback to request.metadatakey (testing convenience)
+    # effective_mk = mk or (req.metadatakey or "")
+    lineage_rows = list()
+    rows = parse_sql_lineage(
+        decoded_sql,
+        regulation='',
+        metadatakey='',
+        view_name='',
+        dialect='',
+    )
+    lineage_rows.extend(rows)
+
+    return {
+        "success": True,
+        "message": f"Successfully extracted lineage for {sql_count} SQL queries",
+        "total_records": len(lineage_rows),
+        "lineage_data": lineage_rows,
+    }
+    
+    
+    
+    
+    
+    
+    
