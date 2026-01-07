@@ -1,0 +1,54 @@
+given a fact field, for example:
+ITEM_CURRENCY_10
+
+You want to know:
+
+Which Olympus database?
+
+Which table?
+
+How this fact field is used in the SQL?
+
+{
+  "sql_query_meta_key": "rho_controls_field_sql_query",
+  "query_params": {
+    "REG_TABLE": "GFOLYREG_MANAGED.CAD_TS_FACT_DATA",
+    "UTID": "ITEM_CURRENCY_10",
+    "UPI": "STRING_136"
+  }
+}
+
+{
+  "sql_query_meta_key": "rho_controls_field_sql_query",
+  "query_params": {
+    "REG_TABLE": "GFOLYREG_MANAGED.CAD_TS_FACT_DATA",
+    "UTID": "ITEM_CURRENCY_10",
+    "UPI": "STRING_136"
+  }
+}
+
+Example SQL:
+SELECT
+    ##UTID##,
+    ##UPI##
+FROM ##REG_TABLE##
+WHERE BUSINESS_DATE = CURRENT_DATE;
+
+
+| Placeholder     | Value                               |
+| --------------- | ----------------------------------- |
+| `##REG_TABLE##` | `GFOLYREG_MANAGED.CAD_TS_FACT_DATA` |
+| `##UTID##`      | `ITEM_CURRENCY_10`                  |
+| `##UPI##`       | `STRING_136`                        |
+
+
+
+
+[{"Fact_Field":"ITEM_CURRENCY_10",
+	"Database":"",
+	"Table" :"",
+},
+{"Fact_Field":"STRING_136",
+	"Database":"GFOLYREG_MANAGED",
+	"Table" :"CAD_TS_FACT_DATA",
+}..]
