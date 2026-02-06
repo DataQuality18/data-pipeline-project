@@ -1,0 +1,28 @@
+Requirement 1 — Output must include “Field Name”
+ Meaning: For each mapped column you output, you must include an additional field like:
+•	FieldName (or whatever field name is used in the mapping file)
+So each output row should have at least:
+•	mappedColumn (the name you are trying to match)
+•	FieldName (the original/actual/real field name from the mapping input)
+•	matching details (below)
+
+Requirement 2 — Output must show all columns (not only >=80%)
+Even if your code is technically returning all columns split across lists, the requirement is:
+ Meaning: For every mapped column from the mapping file:
+•	You must output a row even if it has no good match
+•	Don’t “drop” columns just because the score is low
+So the output should include:
+•	Strong matches
+•	Weak/possible matches
+•	No-match cases
+
+
+Requirement 3 — For low confidence cases, show candidate matches (NVL-style) Meaning:
+•	If matchScore < 80, output should still show:
+o	a list of likely candidate columns (top N)
+o	their tables
+o	their scores
+So reviewers can quickly decide the correct mapping.
+
+
+
