@@ -1,5 +1,5 @@
 """
-sql_lineage_extractors (modular)
+sql_lineage_extractors
 (Extended with JOIN expression lineage — backward-compatible)
 
 Enhancements:
@@ -7,6 +7,7 @@ Enhancements:
 - CASE / WHERE / GROUP BY / HAVING lineage
 - Derived expression column expansion
 - Remarks taxonomy as list[str], Table Alias Name preserved
+- UNION query support
 - ZERO breaking changes to existing behavior
 
 Public API:

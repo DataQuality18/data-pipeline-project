@@ -40,11 +40,11 @@ def _pick_base_table_from_subquery(subq: exp.Subquery) -> Tuple[str, str]:
 def build_from_scope_map(ast_root) -> Dict[str, Tuple]:
     """
     Build global scope: alias_key -> (node, db, table_name, table_alias).
-    Covers plain tables, aliased tables, subqueries, and CTEs.
+    Covers plain tables, aliased tables, and subqueries.
     """
-    from_map = {}
+    from_map: Dict[str, Tuple] = {}
 
-    # 1) All physical tables in the query (db.table or table [alias])
+    # 1) All tables in the query
     for tbl in ast_root.find_all(exp.Table):
         table_name = safe_name(tbl.this)
         db = safe_name(tbl.db)
@@ -53,21 +53,22 @@ def build_from_scope_map(ast_root) -> Dict[str, Tuple]:
         if key and key not in from_map:
             from_map[key] = (tbl, db, table_name, table_alias)
 
-    # 2) Explicit aliases (e.g. FROM t1 AS a, or FROM (subq) AS x)
+    # 2) Aliases
     for alias in ast_root.find_all(exp.Alias):
         key = alias.alias_or_name
         if not key:
             continue
+
         if isinstance(alias.this, exp.Table):
             tbl = alias.this
-            table_name = safe_name(tbl.this)
-            db = safe_name(tbl.db)
-            from_map[key] = (alias, db, table_name, key)
+            from_map[key] = (alias, safe_name(tbl.db), safe_name(tbl.this), key)
+
         elif isinstance(alias.this, exp.Subquery):
+            # Record alias; resolve base table separately
             db, base_table = _pick_base_table_from_subquery(alias.this)
             from_map[key] = (alias.this, db, base_table, key)
 
-    # 3) Subquery aliases (e.g. FROM (SELECT ...) subq_alias)
+    # 3) Subquery alias mapping (JOIN subqueries and FROM subqueries)
     for subq in ast_root.find_all(exp.Subquery):
         subq_alias = subq.alias_or_name if subq.args.get("alias") else None
         if not subq_alias:
@@ -95,13 +96,16 @@ def build_from_scope_map(ast_root) -> Dict[str, Tuple]:
 
 
 def build_select_scope_map(select_exp: exp.Select) -> Dict[str, Tuple]:
-    """Build LOCAL scope for one SELECT: only FROM + JOIN sources of this SELECT."""
+    """
+    LOCAL scope for one SELECT:
+      includes only the FROM + JOIN sources of *this* SELECT.
+    """
     from_map: Dict[str, Tuple] = {}
 
     def _add_source(src):
         if src is None:
             return
-        # Alias: e.g. table AS x or (subquery) AS x
+
         if isinstance(src, exp.Alias):
             key = src.alias_or_name
             if isinstance(src.this, exp.Table):
@@ -112,7 +116,7 @@ def build_select_scope_map(select_exp: exp.Select) -> Dict[str, Tuple]:
                 db, base_table = _pick_base_table_from_subquery(src.this)
                 from_map[key] = (src.this, db, base_table, key)
                 return
-        # Bare table (with optional alias)
+
         if isinstance(src, exp.Table):
             table_name = safe_name(src.this)
             db = safe_name(src.db)
@@ -121,7 +125,7 @@ def build_select_scope_map(select_exp: exp.Select) -> Dict[str, Tuple]:
             if key:
                 from_map[key] = (src, db, table_name, table_alias)
             return
-        # Bare subquery with alias
+
         if isinstance(src, exp.Subquery):
             subq_alias = src.alias_or_name if src.args.get("alias") else None
             if subq_alias:
@@ -129,7 +133,8 @@ def build_select_scope_map(select_exp: exp.Select) -> Dict[str, Tuple]:
                 from_map[subq_alias] = (src, db, base_table, subq_alias)
             return
 
-    # FROM clause: sqlglot uses "from_" (and sometimes "from")
+    # FROM clause: sqlglot can store sources in from.expressions OR from.this
+    # Note: sqlglot uses "from_" (with underscore) as the key
     from_clause = select_exp.args.get("from_") or select_exp.args.get("from")
     if from_clause:
         sources = []
@@ -137,10 +142,11 @@ def build_select_scope_map(select_exp: exp.Select) -> Dict[str, Tuple]:
             sources = list(from_clause.expressions)
         elif getattr(from_clause, "this", None) is not None:
             sources = [from_clause.this]
+
         for src in sources:
             _add_source(src)
 
-    # JOINs: add each joined table/subquery
+    # JOINs
     for j in (select_exp.args.get("joins") or []):
         _add_source(getattr(j, "this", None))
 
@@ -148,9 +154,16 @@ def build_select_scope_map(select_exp: exp.Select) -> Dict[str, Tuple]:
 
 
 def _resolve_source(
-    qualifier: str, local_scope: Dict[str, Tuple], global_scope: Dict[str, Tuple]
+    qualifier: str,
+    local_scope: Dict[str, Tuple],
+    global_scope: Dict[str, Tuple],
 ) -> Tuple[str, str, str]:
-    """Resolve (db, table, table_alias): qualifier in local then global; else single source if only one."""
+    """
+    Resolve (db, table, table_alias) using:
+      - qualifier in local, then global
+      - if unqualified and local has exactly one source -> that
+      - else if unqualified and global has exactly one source -> that
+    """
     if qualifier:
         if qualifier in local_scope:
             _, db, table, table_alias = local_scope[qualifier]
@@ -178,7 +191,14 @@ def _attach_enclosing_alias_if_missing(
     enclosing_alias: str,
     global_scope: Dict[str, Tuple],
 ) -> Tuple[str, str, str]:
-    """When inside a subquery/CTE, fill missing table/table_alias from enclosing alias's base table."""
+    """
+    Generic attachment used for STAR / WHERE / normal columns when qualifier missing.
+
+    If we're inside CURRENT_RECORD/PREVIOUS_RECORD and missing table:
+      -> use TS_FACT table name via global map and keep alias.
+    If we're inside TSR_TS_DATA and missing table:
+      -> keep __DERIVED__ and attach alias.
+    """
     if enclosing_alias and not table_alias:
         table_alias = enclosing_alias
 

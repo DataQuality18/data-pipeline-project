@@ -1,25 +1,25 @@
 """
-Deduplication of lineage records.
+Deduplication of lineage records (v2).
 """
 
 
 def deduplicate_records(records: list) -> list:
-    """Return records with duplicates removed; drop junk all-empty STAR rows."""
+    """Return records with duplicates removed; drop junk all-empty rows."""
     seen = set()
     unique = []
 
     for record in records:
-        # Drop junk STAR rows: all key fields empty and Column Name is *
+        # Drop junk completely-empty rows
         if (
-            record.get("Database Name", "") == ""
-            and record.get("Table Name", "") == ""
-            and record.get("Table Alias Name", "") == ""
-            and record.get("Column Name") == "*"
-            and record.get("Alias Name", "") == ""
+            record.get("databaseName", "") == ""
+            and record.get("tableName", "") == ""
+            and record.get("tableAliasName", "") == ""
+            and record.get("columnName", "") == ""
+            and record.get("aliasName", "") == ""
         ):
             continue
 
-        # Build immutable key for dedup (lists -> tuples for hashability)
+        # Convert dict -> immutable canonical form for deduplication
         key = tuple(
             (k, tuple(v) if isinstance(v, list) else v)
             for k, v in sorted(record.items())

@@ -15,6 +15,7 @@ def decode_base64_sql_from_metadata(metadata_json_str: str, sql_key: str = "sql_
     try:
         return base64.b64decode(b64).decode("utf-8")
     except Exception:
+        # screenshots show returning b64 in failure path
         return b64
 
 
