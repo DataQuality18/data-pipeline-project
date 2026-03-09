@@ -52,11 +52,11 @@ def parse_metadata_and_extract_lineage(
         ValueError: if metadata_json_str is empty or contains invalid JSON.
     """
     log.info(
-        "parse_metadata_and_extract_lineage called",
-        sql_key=sql_key,
-        regulation=regulation,
-        metadatakey=metadatakey,
-        view_name=view_name,
+       f"""parse_metadata_and_extract_lineage called 
+        sql_key={sql_key},
+        regulation={regulation},
+        metadatakey={metadatakey},
+        view_name={view_name}"""
     )
 
     try:

@@ -23,8 +23,8 @@ def extract_select_list(select_exp) -> list:
     """
     if not isinstance(select_exp, exp.Select):
         logger.warning(
-            "extract_select_list: expected exp.Select",
-            received_type=type(select_exp).__name__,
+            f"""extract_select_list: expected exp.Select
+            received_type={type(select_exp).__name__}"""
         )
         return []
 
@@ -39,12 +39,12 @@ def extract_select_list(select_exp) -> list:
             projections.append((str(node), alias, node))
         except Exception as exc:
             logger.error(
-                "extract_select_list: error processing projection; skipping",
-                exc=exc,
-                proj_type=type(proj).__name__,
+                f"""extract_select_list: error processing projection; skipping",
+                exc={exc},
+                proj_type={type(proj).__name__}"""
             )
 
-    logger.debug("Extracted SELECT projections", projection_count=len(projections))
+    logger.debug(f"Extracted SELECT projections  projection_count={len(projections)}")
     return projections
 
 
@@ -58,8 +58,8 @@ def _nearest_subquery_alias(select_node: exp.Select) -> Optional[str]:
     """
     if not isinstance(select_node, exp.Select):
         logger.warning(
-            "_nearest_subquery_alias: expected exp.Select",
-            received_type=type(select_node).__name__,
+            f"""_nearest_subquery_alias: expected exp.Select",
+            received_type={type(select_node).__name__}"""
         )
         return None
 
@@ -70,12 +70,12 @@ def _nearest_subquery_alias(select_node: exp.Select) -> Optional[str]:
 
         if isinstance(parent_subq, exp.Subquery):
             alias = parent_subq.alias_or_name if parent_subq.args.get("alias") else None
-            logger.debug("Nearest subquery alias found", alias=alias)
+            logger.debug(f"Nearest subquery alias found alias={alias}")
             return alias
     except Exception as exc:
         logger.error(
-            "_nearest_subquery_alias: unexpected error traversing parents",
-            exc=exc,
+            f"""_nearest_subquery_alias: unexpected error traversing parents 
+            exc={exc}"""
         )
     return None
 
@@ -90,8 +90,8 @@ def get_outer_derived_table(select: exp.Select) -> Tuple[Optional[str], Optional
     """
     if not isinstance(select, exp.Select):
         logger.warning(
-            "get_outer_derived_table: expected exp.Select",
-            received_type=type(select).__name__,
+           f"""get_outer_derived_table: expected exp.Select",
+            received_type={type(select).__name__}"""
         )
         return None, None
 
@@ -103,12 +103,12 @@ def get_outer_derived_table(select: exp.Select) -> Tuple[Optional[str], Optional
         subq = from_node.this
         if isinstance(subq, exp.Subquery):
             alias = subq.alias_or_name
-            logger.debug("Outer derived table detected", subquery_alias=alias)
+            logger.debug(f"Outer derived table detected subquery_alias={alias}")
             return alias, None
     except Exception as exc:
         logger.error(
-            "get_outer_derived_table: error inspecting FROM clause",
-            exc=exc,
+            f"""get_outer_derived_table: error inspecting FROM clause",
+            exc={exc}"""
         )
     return None, None
 
@@ -126,8 +126,8 @@ def is_function_only_expression(expr: exp.Expression) -> bool:
         return result
     except Exception as exc:
         logger.error(
-            "is_function_only_expression: error inspecting expression",
-            exc=exc,
-            expr_type=type(expr).__name__,
+            f"""is_function_only_expression: error inspecting expression 
+            exc={exc},
+            expr_type={type(expr).__name__}"""
         )
         return False

@@ -48,20 +48,20 @@ def extract_lineage_rows(sql: str, regulation: str, metadatakey: str, view_name:
     """
     if not sql or not sql.strip():
         logger.warning(
-            "extract_lineage_rows: empty SQL received",
-            regulation=regulation,
-            metadatakey=metadatakey,
-            view_name=view_name,
+            f"""extract_lineage_rows: empty SQL received 
+            regulation={regulation},
+            metadatakey={metadatakey},
+            view_name={view_name}"""
         )
         return [_tech_failure_row(regulation, metadatakey, view_name)]
 
     logger.info(
-        "Starting lineage extraction",
-        sql_len=len(sql),
-        regulation=regulation,
-        metadatakey=metadatakey,
-        view_name=view_name,
-        sql_preview=sql[:120].replace("\n", " "),
+        f"""Starting lineage extraction",
+        sql_len={len(sql)},
+        regulation={regulation},
+        metadatakey={metadatakey},
+        view_name={view_name},
+        sql_preview={sql[:120].replace("\n", " ")}"""
     )
 
     # ── Parse: try Spark dialect first, then default ──────────────────────────
@@ -71,9 +71,9 @@ def extract_lineage_rows(sql: str, regulation: str, metadatakey: str, view_name:
         logger.debug("SQL parsed successfully with Spark dialect")
     except Exception as exc:
         logger.warning(
-            "Spark-dialect parse failed; will retry with default dialect",
-            exc=exc,
-            sql_preview=sql[:120].replace("\n", " "),
+            f"""Spark-dialect parse failed; will retry with default dialect 
+            exc={exc},
+            sql_preview={sql[:120].replace("\n", " ")}"""
         )
 
     if ast is None:
@@ -82,9 +82,9 @@ def extract_lineage_rows(sql: str, regulation: str, metadatakey: str, view_name:
             logger.debug("SQL parsed successfully with default dialect")
         except Exception as exc:
             logger.error(
-                "All parse attempts failed; returning TECH_FAILURE row",
-                exc=exc,
-                sql_preview=sql[:120].replace("\n", " "),
+                f"""All parse attempts failed; returning TECH_FAILURE row",
+                exc={exc},
+                sql_preview={sql[:120].replace("\n", " ")}"""
             )
             return [_tech_failure_row(regulation, metadatakey, view_name)]
 
@@ -98,14 +98,14 @@ def extract_lineage_rows(sql: str, regulation: str, metadatakey: str, view_name:
     try:
         results.extend(emit_dataset_lineage(ast, regulation, metadatakey, view_name))
     except Exception as exc:
-        logger.error("emit_dataset_lineage raised unexpectedly", exc=exc)
+        logger.error(f"emit_dataset_lineage raised unexpectedly  exc={exc}")
 
     # Global scope for all selects/aliases in the query
     try:
         from_scope = build_from_scope_map(ast)
-        logger.debug("Global from-scope built", scope_keys=list(from_scope.keys()))
+        logger.debug(f"Global from-scope built  scope_keys={list(from_scope.keys())}")
     except Exception as exc:
-        logger.error("build_from_scope_map failed; using empty scope", exc=exc)
+        logger.error(f"build_from_scope_map failed; using empty scope  exc={exc}")
         from_scope = {}
 
     # ── UNION / SELECT processing ─────────────────────────────────────────────
@@ -124,12 +124,12 @@ def extract_lineage_rows(sql: str, regulation: str, metadatakey: str, view_name:
                 local_from_scope = build_from_scope_map(node)
                 selects_local = list(node.find_all(exp.Select))
                 logger.debug(
-                    "Processing SELECT branch",
-                    select_count=len(selects_local),
+                    f"""Processing SELECT branch"
+                    select_count={len(selects_local)}"""
                 )
                 process_bau(selects_local, local_from_scope)
         except Exception as exc:
-            logger.error("process_node: error processing node", exc=exc, node_type=type(node).__name__)
+            logger.error(f"process_node: error processing node exc={exc}, node_type={type(node).__name__}")
 
     def process_bau(selects_in: list, current_from_scope: dict) -> None:
         """
@@ -141,8 +141,7 @@ def extract_lineage_rows(sql: str, regulation: str, metadatakey: str, view_name:
                 _process_single_select(select, current_from_scope)
             except Exception as exc:
                 logger.error(
-                    "process_bau: unhandled error processing SELECT; skipping",
-                    exc=exc,
+                    f"process_bau: unhandled error processing SELECT; skipping  exc={exc}"
                 )
 
     def _process_single_select(select: exp.Select, current_from_scope: dict) -> None:
@@ -151,9 +150,9 @@ def extract_lineage_rows(sql: str, regulation: str, metadatakey: str, view_name:
         enclosing_alias = _nearest_subquery_alias(select)
 
         logger.debug(
-            "Processing SELECT",
-            enclosing_alias=enclosing_alias,
-            local_scope_keys=list(local_scope.keys()),
+            f"""Processing SELECT",
+            enclosing_alias={enclosing_alias},
+            local_scope_keys={list(local_scope.keys())}"""
         )
 
         # ── 1) SELECT list ────────────────────────────────────────────────────
@@ -165,10 +164,10 @@ def extract_lineage_rows(sql: str, regulation: str, metadatakey: str, view_name:
                 )
             except Exception as exc:
                 logger.error(
-                    "Error processing SELECT projection; skipping",
-                    exc=exc,
-                    col_text=col_text,
-                    col_alias=col_alias,
+                    f"""Error processing SELECT projection; skipping",
+                    exc={exc},
+                    col_text={col_text},
+                    col_alias={col_alias}"""
                 )
 
         # ── 2) WHERE / GROUP BY / HAVING ─────────────────────────────────────
@@ -179,7 +178,7 @@ def extract_lineage_rows(sql: str, regulation: str, metadatakey: str, view_name:
             parent = select.parent
             while parent:
                 if isinstance(parent, exp.Join):
-                    logger.debug("Skipping clause under JOIN", remark_key=remark_key)
+                    logger.debug(f"Skipping clause under JOIN  remark_key={remark_key}")
                     return
                 parent = parent.parent
             try:
@@ -198,9 +197,9 @@ def extract_lineage_rows(sql: str, regulation: str, metadatakey: str, view_name:
                     )
             except Exception as exc:
                 logger.error(
-                    "process_clause: error emitting clause columns",
-                    exc=exc,
-                    remark_key=remark_key,
+                    f"""process_clause: error emitting clause columns"
+                    exc={exc},
+                    remark_key={remark_key}"""
                 )
 
         process_clause(select.args.get("where"), REMARKS["WHERE_COLUMN"])
@@ -210,7 +209,7 @@ def extract_lineage_rows(sql: str, regulation: str, metadatakey: str, view_name:
                 for g in select.args["group"].expressions:
                     process_clause(g, REMARKS["GROUP_BY_COLUMN"])
         except Exception as exc:
-            logger.error("Error processing GROUP BY", exc=exc)
+            logger.error(f"Error processing GROUP BY exc={exc}")
 
         process_clause(select.args.get("having"), REMARKS["HAVING_COLUMN"])
 
@@ -220,7 +219,7 @@ def extract_lineage_rows(sql: str, regulation: str, metadatakey: str, view_name:
             for j in joins:
                 _process_join(j, select, local_scope, current_from_scope)
         except Exception as exc:
-            logger.error("Error processing JOINs", exc=exc)
+            logger.error(f"Error processing JOINs exc={exc}")
 
     def _process_projection(
         col_text, col_alias, col_node,
@@ -235,7 +234,7 @@ def extract_lineage_rows(sql: str, regulation: str, metadatakey: str, view_name:
                 enclosing_alias, regulation, metadatakey, view_name,
             )
             results.extend(rows)
-            logger.debug("STAR projection emitted", row_count=len(rows))
+            logger.debug(f"STAR projection emitted  row_count={len(rows)}")
             return
 
         # Direct column reference
@@ -266,19 +265,19 @@ def extract_lineage_rows(sql: str, regulation: str, metadatakey: str, view_name:
                     base_tables = [v for v in current_from_scope.values() if not isinstance(v[0], exp.Subquery)]
                     if len(base_tables) > 1:
                         remarks.append(REMARKS["TABLE_AMBIGUOUS"])
-                        logger.debug("Ambiguous table for column", column=column_name)
+                        logger.debug(f"Ambiguous table for column  column={column_name}")
             else:
                 if qualifier:
                     remarks.append(REMARKS["INVALID_TABLE_ALIAS"])
                     table = ""
                     table_alias = qualifier
                     db = ""
-                    logger.debug("Invalid table alias for direct column", qualifier=qualifier, column=column_name)
+                    logger.debug(f"Invalid table alias for direct column qualifier={qualifier}, column={column_name}")
                 else:
                     base_tables = [v for v in current_from_scope.values() if not isinstance(v[0], exp.Subquery)]
                     if len(base_tables) > 1:
                         remarks.append(REMARKS["TABLE_AMBIGUOUS"])
-                        logger.debug("Unqualified column with multiple base tables (ambiguous)", column=column_name)
+                        logger.debug(f"Unqualified column with multiple base tables (ambiguous)  column={column_name}")
 
             if table == table_alias:
                 table_alias = ""
@@ -296,7 +295,7 @@ def extract_lineage_rows(sql: str, regulation: str, metadatakey: str, view_name:
                 "viewName": view_name,
                 "remarks": remarks,
             })
-            logger.debug("Direct column lineage emitted", table=table, column=column_name)
+            logger.debug(f"Direct column lineage emitted  table={table}, column={column_name}")
             return
 
         # Derived / CASE expression
@@ -320,7 +319,7 @@ def extract_lineage_rows(sql: str, regulation: str, metadatakey: str, view_name:
                     remarks.append(REMARKS["INVALID_TABLE_ALIAS"])
                     table = ""
                     table_alias = qualifier
-                    logger.debug("Derived expr invalid alias", qualifier=qualifier, column=column_name)
+                    logger.debug(f"Derived expr invalid alias qualifier={qualifier}, column={column_name}")
                 else:
                     # Outermost derived SELECT fallback
                     parent = select.parent
@@ -330,7 +329,7 @@ def extract_lineage_rows(sql: str, regulation: str, metadatakey: str, view_name:
                         parent = parent.parent
                     else:
                         table, table_alias = get_outer_derived_table(select)
-                        logger.debug("Derived expr resolved via outer derived table", table=table)
+                        logger.debug(f"Derived expr resolved via outer derived table table={table}")
 
                 if isinstance(col_node, exp.Case):
                     remarks.append(REMARKS["CASE_EXPR"])
@@ -358,7 +357,7 @@ def extract_lineage_rows(sql: str, regulation: str, metadatakey: str, view_name:
             try:
                 col_sql = str(col_node.sql()).lower()
             except Exception as exc:
-                logger.warning("Could not get sql() from function node", exc=exc)
+                logger.warning(f"Could not get sql() from function node exc={exc}")
                 col_sql = ""
             results.append({
                 "databaseName": "",
@@ -374,7 +373,7 @@ def extract_lineage_rows(sql: str, regulation: str, metadatakey: str, view_name:
                     REMARKS.get("FUNCTION_EXPR", "function_expression"),
                 ],
             })
-            logger.debug("Function-only expression emitted", col_sql=col_sql)
+            logger.debug(f"Function-only expression emitted  col_sql={col_sql}")
 
     def _process_join(j, select, local_scope, current_from_scope) -> None:
         """Emit lineage rows for a single JOIN clause."""
@@ -391,7 +390,7 @@ def extract_lineage_rows(sql: str, regulation: str, metadatakey: str, view_name:
                 if not right_alias and isinstance(right_node, exp.Table):
                     right_alias = safe_name(right_node.this)
 
-            logger.debug("Processing JOIN", join_type=str(kind), right_alias=right_alias)
+            logger.debug(f"Processing JOIN join_type={str(kind)}, right_alias={right_alias}")
 
             # 3a) ON columns
             if on_expr:
@@ -409,7 +408,7 @@ def extract_lineage_rows(sql: str, regulation: str, metadatakey: str, view_name:
                             fallback_alias=right_alias,
                         )
                 except Exception as exc:
-                    logger.error("Error emitting JOIN ON columns", exc=exc)
+                    logger.error(f"Error emitting JOIN ON columns exc={exc}")
 
                 # 3b) Equality pairs a.col = b.col
                 try:
@@ -442,7 +441,7 @@ def extract_lineage_rows(sql: str, regulation: str, metadatakey: str, view_name:
                                 fallback_alias=right_alias,
                             )
                 except Exception as exc:
-                    logger.error("Error emitting JOIN equality pairs", exc=exc)
+                    logger.error(f"Error emitting JOIN equality pairs  exc={exc}")
 
             # 3c) Subquery WHERE inside JOIN (e.g., ROW_NUM filter)
             if isinstance(right_node, exp.Subquery):
@@ -457,9 +456,9 @@ def extract_lineage_rows(sql: str, regulation: str, metadatakey: str, view_name:
                         if sub_where:
                             sub_db, sub_base_table = _pick_base_table_from_subquery(right_node)
                             logger.debug(
-                                "Emitting JOIN subquery WHERE columns",
-                                sub_base_table=sub_base_table,
-                                right_alias=right_alias,
+                                f"""Emitting JOIN subquery WHERE columns",
+                                sub_base_table={sub_base_table},
+                                right_alias={right_alias}"""
                             )
                             for c in extract_columns_from_expression(sub_where):
                                 _emit_column_lineage(
@@ -476,16 +475,16 @@ def extract_lineage_rows(sql: str, regulation: str, metadatakey: str, view_name:
                                     explicit_table_alias=right_alias,
                                 )
                 except Exception as exc:
-                    logger.error("Error emitting JOIN subquery WHERE lineage", exc=exc)
+                    logger.error(f"Error emitting JOIN subquery WHERE lineage  exc={exc}")
 
         except Exception as exc:
-            logger.error("_process_join: unhandled error", exc=exc)
+            logger.error(f"_process_join: unhandled error  exc={exc}")
 
     # ── Kick off processing ───────────────────────────────────────────────────
     try:
         process_node(ast)
     except Exception as exc:
-        logger.error("process_node raised unexpectedly; partial results may be returned", exc=exc)
+        logger.error(f"process_node raised unexpectedly; partial results may be returned  exc={exc}")
 
     # ── 4) Normalize output rows ──────────────────────────────────────────────
     normalized: List[Dict] = []
@@ -500,16 +499,16 @@ def extract_lineage_rows(sql: str, regulation: str, metadatakey: str, view_name:
             normalized.append(row)
         except Exception as exc:
             logger.error(
-                "Normalization error on result row; skipping",
-                exc=exc,
-                row_index=idx,
-                row_preview=str(r)[:200],
+                f"""Normalization error on result row; skipping",
+                exc={exc},
+                row_index={idx},
+                row_preview={str(r)[:200]}"""
             )
 
     logger.info(
-        "Lineage extraction complete",
-        raw_row_count=len(results),
-        normalized_row_count=len(normalized),
-        view_name=view_name,
+       f"""Lineage extraction complete 
+        raw_row_count={len(results)},
+        normalized_row_count={len(normalized)},
+        view_name={view_name}"""
     )
     return normalized
