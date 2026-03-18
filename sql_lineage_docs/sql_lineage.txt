@@ -1,0 +1,146 @@
+SQL Lineage & Metadata Mapping 
+This solution aims to build a centralized system for identifying, validating, and managing column-level mappings across regulatory datasets using metadata, SQL lineage, and matching techniques.
+Problem Statement
+Currently, there is no centralized way to understand:
+Which database columns are used by which regulatory reports
+
+
+How fields are derived across systems
+
+
+What impact a change in a column has across regulations
+
+
+This leads to:
+Manual dependency on multiple teams
+
+
+Lack of transparency
+
+
+Delayed impact analysis
+
+
+Repeated effort in SQL development
+Proposed Solution
+We are building an automated system that:
+Extracts metadata from RHOO APIs
+
+
+Parses SQL logic to derive lineage
+
+
+Uses Python-based fuzzy matching to identify potential column mappings
+
+
+Stores mappings as structured records
+
+
+Provides a UI layer for user validation
+
+
+Maintains consistency using unique identifiers
+
+
+Handles versioning using branch-based logic
+System Workflow
+Step 1: Metadata Extraction
+Metadata such as regulation, tables, and fields is retrieved from RHOO APIs.
+
+Step 2: SQL Lineage Processing
+SQL queries are parsed using lineage tools (e.g., SQLGlot) to identify source tables and columns.
+
+Step 3: Fuzzy Matching Engine
+A Python module performs fuzzy matching between:
+Target (mapper fields)
+
+
+Source database columns
+
+
+Each match is assigned a confidence percentage.
+Step 4: Mapping Output Generation
+Mappings are generated as row-level records, each containing:
+Source table & column
+
+
+Match percentage
+
+
+Regulation & stream
+
+
+Unique ID
+
+
+
+Step 5: Unique ID Assignment
+Each mapping is assigned a consistent unique ID using:
+regulation + mapper_field + table + column
+This ensures:
+No duplicate entries
+
+
+Consistent tracking across runs
+Step 6: Storage Layer
+All mappings are stored in a dedicated collection/table with fields like:
+Match percentage
+
+
+Status (pending / approved / rejected)
+
+
+Auto/manual flag
+
+
+
+Step 7: User Validation (UI Layer)
+Users interact via a UI to:
+Approve correct mappings
+
+
+Reject incorrect ones
+
+
+Add new mappings manually
+
+
+
+Step 8: Version & Branch Handling
+When a new branch/version is introduced:
+Existing mappings are marked as pending review
+
+
+Users revalidate mappings if logic changes
+Step 9: Duplicate Handling
+If the same mapping (same unique ID) is generated again:
+It is NOT reinserted
+
+
+Existing user decisions are preserved
+
+
+
+ Patching & Backfill
+Historical records that do not have required fields populated must be patched to ensure:
+Data consistency
+
+
+Accurate joins
+
+
+Reliable reporting
+Final Output
+A validated mapping layer that represents:
+Accurate source-to-target relationships
+
+
+User-approved mappings
+
+
+Version-controlled lineage
+
+
+
+
+
