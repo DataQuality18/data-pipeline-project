@@ -1,0 +1,437 @@
+=====================this with nvl sql query ========================================
+select NVL(colA, colB) as test from table1
+=============================================================
+[
+  {
+    "databaseName": "",
+    "tableName": "table1",
+    "tableAliasName": "",
+    "columnName": "cola",
+    "aliasName": "test",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "derived_expression"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "table1",
+    "tableAliasName": "",
+    "columnName": "colb",
+    "aliasName": "test",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "derived_expression"
+    ]
+  }
+]
+=====================parse end ========================================
+=====================this with COALESCE sql query ========================================
+SELECT
+    customer_id,
+    COALESCE(mobile_phone, home_phone, work_phone, 'UNKNOWN')  AS best_phone,
+    COALESCE(preferred_name, first_name)                        AS display_name,
+    COALESCE(promo_price, sale_price, list_price)               AS effective_price
+FROM  customers;
+=============================================================
+[
+  {
+    "databaseName": "",
+    "tableName": "customers",
+    "tableAliasName": "",
+    "columnName": "customer_id",
+    "aliasName": "",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "database_not_specified_in_query"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "customers",
+    "tableAliasName": "",
+    "columnName": "mobile_phone",
+    "aliasName": "best_phone",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "derived_expression"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "customers",
+    "tableAliasName": "",
+    "columnName": "home_phone",
+    "aliasName": "best_phone",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "derived_expression"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "customers",
+    "tableAliasName": "",
+    "columnName": "work_phone",
+    "aliasName": "best_phone",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "derived_expression"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "customers",
+    "tableAliasName": "",
+    "columnName": "preferred_name",
+    "aliasName": "display_name",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "derived_expression"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "customers",
+    "tableAliasName": "",
+    "columnName": "first_name",
+    "aliasName": "display_name",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "derived_expression"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "customers",
+    "tableAliasName": "",
+    "columnName": "promo_price",
+    "aliasName": "effective_price",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "derived_expression"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "customers",
+    "tableAliasName": "",
+    "columnName": "sale_price",
+    "aliasName": "effective_price",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "derived_expression"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "customers",
+    "tableAliasName": "",
+    "columnName": "list_price",
+    "aliasName": "effective_price",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "derived_expression"
+    ]
+  }
+]
+=====================parse end ========================================
+
+
+SELECT
+    oi.order_id,
+    oi.product_id,
+    oi.quantity,
+    oi.unit_price,
+    oi.discount_pct,
+
+    -- line revenue (before discount)
+    oi.quantity * oi.unit_price                                        AS gross_line_amount,
+
+    -- discount applied
+    oi.quantity * oi.unit_price * (oi.discount_pct / 100.0)          AS discount_amount,
+
+    -- net revenue after discount
+    oi.quantity * oi.unit_price * (1 - oi.discount_pct / 100.0)     AS net_line_amount,
+
+    -- gross margin %  (cost from products table)
+    (oi.unit_price - p.unit_cost) / NULLIF(oi.unit_price, 0) * 100  AS margin_pct,
+
+    -- tax (8.5%)
+    oi.quantity * oi.unit_price * 0.085                              AS tax_amount
+FROM  order_items oi
+JOIN  products    p  ON oi.product_id = p.product_id;
+=============================================================
+[
+  {
+    "databaseName": "",
+    "tableName": "order_items",
+    "tableAliasName": "oi",
+    "columnName": "order_id",
+    "aliasName": "",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "database_not_specified_in_query"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "order_items",
+    "tableAliasName": "oi",
+    "columnName": "product_id",
+    "aliasName": "",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "database_not_specified_in_query"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "order_items",
+    "tableAliasName": "oi",
+    "columnName": "quantity",
+    "aliasName": "",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "database_not_specified_in_query"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "order_items",
+    "tableAliasName": "oi",
+    "columnName": "unit_price",
+    "aliasName": "",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "database_not_specified_in_query"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "order_items",
+    "tableAliasName": "oi",
+    "columnName": "discount_pct",
+    "aliasName": "",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "database_not_specified_in_query"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "order_items",
+    "tableAliasName": "oi",
+    "columnName": "quantity",
+    "aliasName": "gross_line_amount",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "derived_expression"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "order_items",
+    "tableAliasName": "oi",
+    "columnName": "unit_price",
+    "aliasName": "gross_line_amount",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "derived_expression"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "order_items",
+    "tableAliasName": "oi",
+    "columnName": "quantity",
+    "aliasName": "discount_amount",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "derived_expression"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "order_items",
+    "tableAliasName": "oi",
+    "columnName": "unit_price",
+    "aliasName": "discount_amount",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "derived_expression"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "order_items",
+    "tableAliasName": "oi",
+    "columnName": "discount_pct",
+    "aliasName": "discount_amount",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "derived_expression"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "order_items",
+    "tableAliasName": "oi",
+    "columnName": "quantity",
+    "aliasName": "net_line_amount",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "derived_expression"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "order_items",
+    "tableAliasName": "oi",
+    "columnName": "unit_price",
+    "aliasName": "net_line_amount",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "derived_expression"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "order_items",
+    "tableAliasName": "oi",
+    "columnName": "discount_pct",
+    "aliasName": "net_line_amount",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "derived_expression"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "order_items",
+    "tableAliasName": "oi",
+    "columnName": "unit_price",
+    "aliasName": "margin_pct",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "derived_expression"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "products",
+    "tableAliasName": "p",
+    "columnName": "unit_cost",
+    "aliasName": "margin_pct",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "derived_expression"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "order_items",
+    "tableAliasName": "oi",
+    "columnName": "quantity",
+    "aliasName": "tax_amount",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "derived_expression"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "order_items",
+    "tableAliasName": "oi",
+    "columnName": "unit_price",
+    "aliasName": "tax_amount",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "derived_expression"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "order_items",
+    "tableAliasName": "oi",
+    "columnName": "product_id",
+    "aliasName": "",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "join_on_clause_column",
+      "join_type:INNER"
+    ]
+  },
+  {
+    "databaseName": "",
+    "tableName": "products",
+    "tableAliasName": "p",
+    "columnName": "product_id",
+    "aliasName": "",
+    "regulation": "SEC",
+    "metadatakey": "KEY123",
+    "viewName": "VW_SAMPLE",
+    "remarks": [
+      "join_on_clause_column",
+      "join_type:INNER"
+    ]
+  }
+]
