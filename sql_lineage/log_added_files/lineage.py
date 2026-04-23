@@ -115,6 +115,7 @@ def extract_lineage_rows(sql: str, regulation: str, metadatakey: str, view_name:
         if node is None:
             logger.debug("process_node: received None node; skipping")
             return
+        # this test
         try:
             if isinstance(node, exp.Union):
                 logger.debug("Processing UNION node")
